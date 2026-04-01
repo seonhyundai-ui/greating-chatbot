@@ -96,13 +96,19 @@ h1 {
 }
 
 .option-row {
+    width: 100%;
     display: flex;
     justify-content: flex-end;
     margin-top: 10px;
 }
 
-.option-row .stButton {
+.option-row > div {
     width: 78%;
+    margin-left: auto;
+}
+
+.option-row .stButton {
+    width: 100%;
 }
 
 .option-row .stButton > button {
