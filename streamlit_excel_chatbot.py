@@ -524,34 +524,34 @@ if not options:
     st.stop()
 
 for idx, option in enumerate(options):
-    st.markdown("<div class='option-row'>", unsafe_allow_html=True)
-    if st.button(option.option_text, key=f"option_{current_node}_{idx}"):
-        st.session_state.history.append({"role": "user", "text": option.option_text})
-        resolved_next, warning_msg = resolve_route(option.next_node, option.option_text)
-        if warning_msg:
-            st.warning(warning_msg)
+    left_spacer, right_area = st.columns([1.2, 3.8])
+    with right_area:
+        if st.button(option.option_text, key=f"option_{current_node}_{idx}", use_container_width=True):
+            st.session_state.history.append({"role": "user", "text": option.option_text})
+            resolved_next, warning_msg = resolve_route(option.next_node, option.option_text)
+            if warning_msg:
+                st.warning(warning_msg)
 
-        is_result = resolved_next.startswith("Result-") and resolved_next != "Result-MedRoute"
-        if is_result:
-            result_name = node_result_name(st.session_state.tree, resolved_next)
-            st.session_state.steps.append(
-                StepRecord(current_node, option.question, option.option_text, resolved_next, result_name)
-            )
-            st.session_state.current_node = resolved_next
-            st.session_state.result_name = result_name
-        else:
-            next_rows = st.session_state.tree.get(resolved_next, [])
-            st.session_state.steps.append(
-                StepRecord(current_node, option.question, option.option_text, resolved_next, None)
-            )
-            if next_rows:
-                if next_rows[0].reaction:
-                    st.session_state.history.append({"role": "bot", "text": next_rows[0].reaction})
-                if next_rows[0].question:
-                    st.session_state.history.append({"role": "bot", "text": next_rows[0].question})
-            st.session_state.current_node = resolved_next
-        st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
+            is_result = resolved_next.startswith("Result-") and resolved_next != "Result-MedRoute"
+            if is_result:
+                result_name = node_result_name(st.session_state.tree, resolved_next)
+                st.session_state.steps.append(
+                    StepRecord(current_node, option.question, option.option_text, resolved_next, result_name)
+                )
+                st.session_state.current_node = resolved_next
+                st.session_state.result_name = result_name
+            else:
+                next_rows = st.session_state.tree.get(resolved_next, [])
+                st.session_state.steps.append(
+                    StepRecord(current_node, option.question, option.option_text, resolved_next, None)
+                )
+                if next_rows:
+                    if next_rows[0].reaction:
+                        st.session_state.history.append({"role": "bot", "text": next_rows[0].reaction})
+                    if next_rows[0].question:
+                        st.session_state.history.append({"role": "bot", "text": next_rows[0].question})
+                st.session_state.current_node = resolved_next
+            st.rerun()
 
 st.markdown("<div class='section-gap'></div>", unsafe_allow_html=True)
 col1, col2, col3 = st.columns([1.2, 1.2, 2.6])
