@@ -1,93 +1,160 @@
 import io
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
 import streamlit as st
 
-st.set_page_config(page_title="맞춤 식단 챗봇 데모", page_icon="💬", layout="centered")
+st.set_page_config(page_title="맞춤 식단 챗봇", page_icon="💬", layout="centered")
 
 CSS = """
 <style>
 .block-container {
     max-width: 860px;
-    padding-top: 1.5rem;
+    padding-top: 1.2rem;
     padding-bottom: 3rem;
 }
+
+html, body, [class*="css"] {
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+                 "Pretendard", "Segoe UI", sans-serif;
+}
+
+h1 {
+    font-size: 30px !important;
+    font-weight: 800 !important;
+    margin-bottom: 0.2rem !important;
+    color: #111827;
+}
+
 .chat-wrap {
     display: flex;
     width: 100%;
-    margin: 0.35rem 0;
+    margin: 0.45rem 0;
 }
+
 .chat-wrap.bot {
     justify-content: flex-start;
 }
+
 .chat-wrap.user {
     justify-content: flex-end;
 }
+
 .chat-bubble {
     max-width: 78%;
     padding: 14px 16px;
-    border-radius: 18px;
-    line-height: 1.55;
-    font-size: 16px;
+    border-radius: 20px;
+    line-height: 1.6;
+    font-size: 17px;
     word-break: keep-all;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    box-shadow: 0 6px 18px rgba(17, 24, 39, 0.06);
+    border: 1px solid rgba(0,0,0,0.04);
 }
+
 .chat-bubble.bot {
-    background: #f3f4f6;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
     color: #111827;
-    border-bottom-left-radius: 6px;
+    border-bottom-left-radius: 8px;
 }
+
 .chat-bubble.user {
-    background: #dbeafe;
-    color: #111827;
-    border-bottom-right-radius: 6px;
+    background: linear-gradient(180deg, #dbeafe 0%, #bfdbfe 100%);
+    color: #0f172a;
+    border-bottom-right-radius: 8px;
 }
-.chat-bubble.result {
-    background: #ecfeff;
-    border: 1px solid #a5f3fc;
-}
-.chat-label {
-    font-size: 12px;
-    color: #6b7280;
-    margin-bottom: 4px;
-}
-.option-box {
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 16px;
-    padding: 12px;
-    margin-top: 10px;
-}
+
 .result-card {
     border: 1px solid #d1fae5;
-    background: #f0fdf4;
-    border-radius: 18px;
-    padding: 16px;
+    background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 100%);
+    border-radius: 22px;
+    padding: 18px;
     margin-top: 12px;
+    box-shadow: 0 10px 24px rgba(16, 185, 129, 0.08);
 }
+
 .result-title {
-    font-size: 22px;
-    font-weight: 700;
-    margin-bottom: 6px;
+    font-size: 24px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    color: #065f46;
 }
+
 .path-card {
     border: 1px solid #e5e7eb;
     background: #ffffff;
-    border-radius: 16px;
-    padding: 14px 16px;
+    border-radius: 20px;
+    padding: 16px 18px;
     margin-top: 12px;
+    box-shadow: 0 6px 18px rgba(17, 24, 39, 0.05);
 }
+
 .small-note {
     font-size: 13px;
     color: #6b7280;
 }
-.stButton > button {
+
+.option-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+}
+
+.option-row .stButton {
+    width: 78%;
+}
+
+.option-row .stButton > button {
     width: 100%;
-    min-height: 52px;
-    border-radius: 14px;
+    min-height: 54px;
+    border-radius: 16px;
     font-size: 16px;
+    font-weight: 700;
+    border: none;
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.18);
+    background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+}
+
+.back-btn .stButton > button {
+    width: 100%;
+    min-height: 48px;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    border: none;
+    background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+    color: #ffffff;
+    box-shadow: 0 6px 14px rgba(245, 158, 11, 0.22);
+}
+
+.restart-btn .stButton > button {
+    width: 100%;
+    min-height: 48px;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    border: none;
+    background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+    color: #ffffff;
+    box-shadow: 0 6px 14px rgba(16, 185, 129, 0.22);
+}
+
+.data-badge {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: #4338ca;
+    font-size: 13px;
+    font-weight: 700;
+    margin-top: 6px;
+    margin-bottom: 8px;
+}
+
+.section-gap {
+    height: 8px;
 }
 </style>
 """
@@ -100,6 +167,9 @@ REQUIRED_COLUMNS = [
     "이동할 노드 ID",
     "최종 추천 식단 (결과)",
 ]
+
+# GitHub 저장소에 함께 올려둘 기본 엑셀 파일명
+DEFAULT_EXCEL_FILE = "맞춤 식단 큐레이션 마스터 완성.xlsx"
 
 
 @dataclass
@@ -131,6 +201,7 @@ def init_state() -> None:
         "history": [],
         "steps": [],
         "result_name": None,
+        "data_source": None,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -249,39 +320,24 @@ def reset_chat(tree: Dict[str, List[OptionRow]]) -> None:
         st.session_state.history.append({"role": "bot", "text": first_row.question})
 
 
-# Header
-st.title("💬 맞춤 식단 추천 챗봇 데모")
-st.caption("업로드한 엑셀의 질문 트리를 기반으로 실제 채팅창처럼 시연할 수 있는 웹앱입니다.")
+def apply_workbook(file_bytes: bytes, file_name: str, selected_sheet: str) -> None:
+    tree = parse_tree(file_bytes, selected_sheet)
+    st.session_state.workbook_bytes = file_bytes
+    st.session_state.file_name = file_name
+    st.session_state.sheet_name = selected_sheet
+    st.session_state.tree = tree
+    reset_chat(tree)
 
-uploaded_file = st.file_uploader("엑셀 파일 업로드", type=["xlsx", "xls"])
 
-if uploaded_file is not None:
-    file_bytes = uploaded_file.getvalue()
-    workbook = load_workbook(file_bytes)
-    sheet_names = list(workbook.keys())
-    selected_sheet = st.selectbox("시트 선택", sheet_names, index=0)
+@st.cache_data(show_spinner=False)
+def read_repo_excel(path_str: str) -> bytes:
+    return Path(path_str).read_bytes()
 
-    file_changed = (
-        st.session_state.workbook_bytes != file_bytes
-        or st.session_state.sheet_name != selected_sheet
-        or st.session_state.file_name != uploaded_file.name
-    )
 
-    if file_changed:
-        try:
-            tree = parse_tree(file_bytes, selected_sheet)
-            st.session_state.workbook_bytes = file_bytes
-            st.session_state.file_name = uploaded_file.name
-            st.session_state.sheet_name = selected_sheet
-            st.session_state.tree = tree
-            reset_chat(tree)
-        except Exception as e:
-            st.error(f"파일을 읽는 중 오류가 발생했습니다: {e}")
-            st.stop()
-
-if not st.session_state.tree:
-    st.info("먼저 챗봇용 엑셀 파일을 업로드해 주세요.")
-    st.stop()
+def get_default_excel_path() -> Optional[Path]:
+    base_dir = Path(__file__).resolve().parent
+    candidate = base_dir / DEFAULT_EXCEL_FILE
+    return candidate if candidate.exists() else None
 
 
 def render_bubble(role: str, text: str) -> None:
@@ -289,154 +345,11 @@ def render_bubble(role: str, text: str) -> None:
     st.markdown(
         f"""
         <div class="chat-wrap {role}">
-            <div>
-                <div class="chat-bubble {role}">{safe_text}</div>
-            </div>
+            <div class="chat-bubble {role}">{safe_text}</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
-
-
-for msg in st.session_state.history:
-    render_bubble(msg["role"], msg["text"])
-
-if st.session_state.result_name:
-    st.markdown(
-        f"""
-        <div class="chat-wrap bot">
-            <div class="result-card">
-                <div class="small-note">최종 추천 결과</div>
-                <div class="result-title">{st.session_state.result_name}</div>
-                <div>선택하신 흐름을 바탕으로 가장 잘 맞는 식단을 추천했어요.</div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    path_lines = []
-    for idx, step in enumerate(st.session_state.steps, start=1):
-        path_lines.append(
-            f"<div style='margin-bottom:10px; font-size:16px; line-height:1.55;'><b>{idx}. {step.question}</b><br>→ 선택: {step.selected_option}</div>"
-        )
-    st.markdown(
-        f"""
-        <div class="chat-wrap bot">
-            <div class="path-card">
-                <div style="font-size:18px; font-weight:700; margin-bottom:10px;">선택 경로</div>
-                {''.join(path_lines) if path_lines else '<div class="small-note">선택 이력이 없습니다.</div>'}
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    col1, col2, col3 = st.columns([1, 1, 1])
-    with col3:
-        if st.button("이전 선택으로 돌아가기", key="back_from_result"):
-            if st.session_state.steps:
-                st.session_state.steps.pop()
-                st.session_state.result_name = None
-                # rebuild history from steps
-                tree = st.session_state.tree
-                reset_chat(tree)
-                previous_steps = st.session_state.steps.copy()
-                st.session_state.steps = []
-                st.session_state.history = st.session_state.history[:]  # keep intro only
-                st.session_state.result_name = None
-                current_node = get_start_node(tree)
-                if previous_steps:
-                    for step in previous_steps:
-                        options = tree[current_node]
-                        selected_row = next((r for r in options if r.option_text == step.selected_option), None)
-                        if not selected_row:
-                            break
-                        st.session_state.history.append({"role": "user", "text": selected_row.option_text})
-                        resolved_next, _ = resolve_route(selected_row.next_node, selected_row.option_text)
-                        is_result = resolved_next.startswith("Result-") and resolved_next != "Result-MedRoute"
-                        if is_result:
-                            st.session_state.steps.append(
-                                StepRecord(current_node, selected_row.question, selected_row.option_text, resolved_next, node_result_name(tree, resolved_next))
-                            )
-                            st.session_state.current_node = resolved_next
-                            st.session_state.result_name = node_result_name(tree, resolved_next)
-                        else:
-                            next_rows = tree.get(resolved_next, [])
-                            st.session_state.steps.append(
-                                StepRecord(current_node, selected_row.question, selected_row.option_text, resolved_next, None)
-                            )
-                            if next_rows:
-                                if next_rows[0].reaction:
-                                    st.session_state.history.append({"role": "bot", "text": next_rows[0].reaction})
-                                if next_rows[0].question:
-                                    st.session_state.history.append({"role": "bot", "text": next_rows[0].question})
-                            st.session_state.current_node = resolved_next
-                # and then remove one step again to back from result
-                if st.session_state.steps:
-                    st.session_state.steps.pop()
-                    replay_steps = st.session_state.steps.copy()
-                    reset_chat(tree)
-                    st.session_state.steps = []
-                    for step in replay_steps:
-                        options = tree[st.session_state.current_node]
-                        selected_row = next((r for r in options if r.option_text == step.selected_option), None)
-                        if not selected_row:
-                            break
-                        st.session_state.history.append({"role": "user", "text": selected_row.option_text})
-                        resolved_next, _ = resolve_route(selected_row.next_node, selected_row.option_text)
-                        next_rows = tree.get(resolved_next, [])
-                        st.session_state.steps.append(StepRecord(st.session_state.current_node, selected_row.question, selected_row.option_text, resolved_next, None))
-                        if next_rows:
-                            if next_rows[0].reaction:
-                                st.session_state.history.append({"role": "bot", "text": next_rows[0].reaction})
-                            if next_rows[0].question:
-                                st.session_state.history.append({"role": "bot", "text": next_rows[0].question})
-                        st.session_state.current_node = resolved_next
-            st.rerun()
-    with col2:
-        if st.button("처음부터 다시 시작", key="restart_result"):
-            reset_chat(st.session_state.tree)
-            st.rerun()
-    st.stop()
-
-
-current_node = st.session_state.current_node
-options = st.session_state.tree.get(current_node, [])
-if not options:
-    st.warning("현재 노드에 연결된 선택지가 없습니다. 엑셀 구조를 확인해 주세요.")
-    st.stop()
-
-st.markdown("<div class='option-box'><div style='font-size:15px; font-weight:600; margin-bottom:8px;'>선택지</div></div>", unsafe_allow_html=True)
-for idx, option in enumerate(options):
-    left, right = st.columns([1.3, 2.7])
-    with right:
-        if st.button(option.option_text, key=f"option_{current_node}_{idx}"):
-            st.session_state.history.append({"role": "user", "text": option.option_text})
-            resolved_next, warning_msg = resolve_route(option.next_node, option.option_text)
-            if warning_msg:
-                st.warning(warning_msg)
-
-            is_result = resolved_next.startswith("Result-") and resolved_next != "Result-MedRoute"
-            if is_result:
-                result_name = node_result_name(st.session_state.tree, resolved_next)
-                st.session_state.steps.append(
-                    StepRecord(current_node, option.question, option.option_text, resolved_next, result_name)
-                )
-                st.session_state.current_node = resolved_next
-                st.session_state.result_name = result_name
-            else:
-                next_rows = st.session_state.tree.get(resolved_next, [])
-                st.session_state.steps.append(
-                    StepRecord(current_node, option.question, option.option_text, resolved_next, None)
-                )
-                if next_rows:
-                    if next_rows[0].reaction:
-                        st.session_state.history.append({"role": "bot", "text": next_rows[0].reaction})
-                    if next_rows[0].question:
-                        st.session_state.history.append({"role": "bot", "text": next_rows[0].question})
-                st.session_state.current_node = resolved_next
-            st.rerun()
 
 
 def replay_until(step_count: int) -> None:
@@ -471,12 +384,182 @@ def replay_until(step_count: int) -> None:
             st.session_state.current_node = resolved_next
 
 
-bottom_left, bottom_mid, bottom_right = st.columns([1, 1, 1])
-with bottom_right:
-    if st.button("이전 질문으로 돌아가기", disabled=len(st.session_state.steps) == 0):
+# Header
+st.title("💬 맞춤 식단 추천 챗봇")
+st.caption("질문에 답하면, 나에게 맞는 식단을 추천해드려요.")
+
+# 기본 엑셀 자동 로드
+repo_excel_path = get_default_excel_path()
+default_bytes = None
+if repo_excel_path:
+    default_bytes = read_repo_excel(str(repo_excel_path))
+
+source_options = []
+if default_bytes is not None:
+    source_options.append("기본 데모 파일 사용")
+source_options.append("직접 업로드")
+
+selected_source = st.radio(
+    "데이터 소스",
+    source_options,
+    horizontal=True,
+    index=0,
+    label_visibility="collapsed",
+)
+
+if selected_source == "기본 데모 파일 사용" and default_bytes is not None:
+    workbook = load_workbook(default_bytes)
+    sheet_names = list(workbook.keys())
+
+    default_sheet_index = 0
+    if st.session_state.file_name == DEFAULT_EXCEL_FILE and st.session_state.sheet_name in sheet_names:
+        default_sheet_index = sheet_names.index(st.session_state.sheet_name)
+
+    selected_sheet = st.selectbox("시트 선택", sheet_names, index=default_sheet_index)
+    st.markdown(f"<div class='data-badge'>기본 파일 연결됨 · {DEFAULT_EXCEL_FILE}</div>", unsafe_allow_html=True)
+
+    needs_reload = (
+        st.session_state.workbook_bytes != default_bytes
+        or st.session_state.sheet_name != selected_sheet
+        or st.session_state.file_name != DEFAULT_EXCEL_FILE
+    )
+
+    if needs_reload:
+        try:
+            apply_workbook(default_bytes, DEFAULT_EXCEL_FILE, selected_sheet)
+            st.session_state.data_source = "repo_default"
+        except Exception as e:
+            st.error(f"기본 엑셀 파일을 읽는 중 오류가 발생했습니다: {e}")
+            st.stop()
+
+else:
+    uploaded_file = st.file_uploader("엑셀 파일 업로드", type=["xlsx", "xls"])
+    if uploaded_file is not None:
+        file_bytes = uploaded_file.getvalue()
+        workbook = load_workbook(file_bytes)
+        sheet_names = list(workbook.keys())
+        selected_sheet = st.selectbox("시트 선택", sheet_names, index=0)
+
+        file_changed = (
+            st.session_state.workbook_bytes != file_bytes
+            or st.session_state.sheet_name != selected_sheet
+            or st.session_state.file_name != uploaded_file.name
+        )
+
+        if file_changed:
+            try:
+                apply_workbook(file_bytes, uploaded_file.name, selected_sheet)
+                st.session_state.data_source = "uploaded"
+            except Exception as e:
+                st.error(f"파일을 읽는 중 오류가 발생했습니다: {e}")
+                st.stop()
+
+if not st.session_state.tree:
+    if default_bytes is None:
+        st.info("기본 엑셀 파일이 없어요. GitHub 저장소에 엑셀을 올리거나 직접 업로드해 주세요.")
+    else:
+        st.info("챗봇 데이터를 불러오는 중입니다.")
+    st.stop()
+
+for msg in st.session_state.history:
+    render_bubble(msg["role"], msg["text"])
+
+if st.session_state.result_name:
+    st.markdown(
+        f"""
+        <div class="chat-wrap bot">
+            <div class="result-card">
+                <div class="small-note">최종 추천 결과</div>
+                <div class="result-title">{st.session_state.result_name}</div>
+                <div>답변 내용을 바탕으로 가장 잘 맞는 식단을 추천했어요.</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    path_lines = []
+    for idx, step in enumerate(st.session_state.steps, start=1):
+        path_lines.append(
+            f"<div style='margin-bottom:10px; font-size:16px; line-height:1.55;'><b>{idx}. {step.question}</b><br>→ 선택: {step.selected_option}</div>"
+        )
+    st.markdown(
+        f"""
+        <div class="chat-wrap bot">
+            <div class="path-card">
+                <div style="font-size:18px; font-weight:700; margin-bottom:10px;">내 답변 요약</div>
+                {''.join(path_lines) if path_lines else '<div class="small-note">선택 이력이 없습니다.</div>'}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    col1, col2, col3 = st.columns([1.2, 1.2, 2.6])
+    with col1:
+        st.markdown("<div class='back-btn'>", unsafe_allow_html=True)
+        if st.button("이전 질문", key="back_from_result"):
+            replay_until(len(st.session_state.steps) - 1)
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with col2:
+        st.markdown("<div class='restart-btn'>", unsafe_allow_html=True)
+        if st.button("처음으로", key="restart_result"):
+            reset_chat(st.session_state.tree)
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+    st.stop()
+
+current_node = st.session_state.current_node
+options = st.session_state.tree.get(current_node, [])
+if not options:
+    st.warning("현재 노드에 연결된 선택지가 없습니다. 엑셀 구조를 확인해 주세요.")
+    st.stop()
+
+for idx, option in enumerate(options):
+    st.markdown("<div class='option-row'>", unsafe_allow_html=True)
+    if st.button(option.option_text, key=f"option_{current_node}_{idx}"):
+        st.session_state.history.append({"role": "user", "text": option.option_text})
+        resolved_next, warning_msg = resolve_route(option.next_node, option.option_text)
+        if warning_msg:
+            st.warning(warning_msg)
+
+        is_result = resolved_next.startswith("Result-") and resolved_next != "Result-MedRoute"
+        if is_result:
+            result_name = node_result_name(st.session_state.tree, resolved_next)
+            st.session_state.steps.append(
+                StepRecord(current_node, option.question, option.option_text, resolved_next, result_name)
+            )
+            st.session_state.current_node = resolved_next
+            st.session_state.result_name = result_name
+        else:
+            next_rows = st.session_state.tree.get(resolved_next, [])
+            st.session_state.steps.append(
+                StepRecord(current_node, option.question, option.option_text, resolved_next, None)
+            )
+            if next_rows:
+                if next_rows[0].reaction:
+                    st.session_state.history.append({"role": "bot", "text": next_rows[0].reaction})
+                if next_rows[0].question:
+                    st.session_state.history.append({"role": "bot", "text": next_rows[0].question})
+            st.session_state.current_node = resolved_next
+        st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
+
+st.markdown("<div class='section-gap'></div>", unsafe_allow_html=True)
+col1, col2, col3 = st.columns([1.2, 1.2, 2.6])
+
+with col1:
+    st.markdown("<div class='back-btn'>", unsafe_allow_html=True)
+    if st.button("이전 질문", disabled=len(st.session_state.steps) == 0):
         replay_until(len(st.session_state.steps) - 1)
         st.rerun()
-with bottom_mid:
-    if st.button("처음부터 다시 시작"):
+    st.markdown("</div>", unsafe_allow_html=True)
+
+with col2:
+    st.markdown("<div class='restart-btn'>", unsafe_allow_html=True)
+    if st.button("처음으로"):
         reset_chat(st.session_state.tree)
         st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
