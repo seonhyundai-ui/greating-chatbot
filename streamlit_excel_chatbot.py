@@ -300,6 +300,15 @@ RESULT_NAME_BY_NODE = {
     "Result-13": "프로틴Up",
     "Result-14": "저당플랜",
     "Result-15": "저속도시락",
+    "Result-16": "맛집한끼(맞춤도시락)",
+    "Result-17": "시니어푸드",
+    "Result-Dia-All": "당뇨식단(냉장) + 당뇨식단(냉동)",
+    "Result-Sugar-All": "저당식단(냉장) + 저당플랜(냉동)",
+    "Result-Cal-All": "칼로리식단(냉장) + 350뷰티핏(냉동)",
+    "Result-Pro-All": "단백질식단(냉장) + 프로틴Up(냉동)",
+    "Result-Slow-All": "저속식단(냉장) + 저속도시락(냉동)",
+    "Result-Bal-All": "마이그리팅(냉장) + 맛집한끼(냉동)",
+    
 }
 
 
