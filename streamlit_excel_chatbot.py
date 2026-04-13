@@ -175,7 +175,7 @@ REQUIRED_COLUMNS = [
 ]
 
 # GitHub 저장소에 함께 올려둘 기본 엑셀 파일명
-DEFAULT_EXCEL_FILE = "맞춤 식단 추천 알고리즘 마스터2.xlsx"
+DEFAULT_EXCEL_FILE = "맞춤 식단 추천 알고리즘 마스터4.xlsx"
 
 
 @dataclass
@@ -304,9 +304,9 @@ RESULT_NAME_BY_NODE = {
     "Result-17": "시니어푸드",
     "Result-Dia-All": "당뇨식단(냉장) + 당뇨식단(냉동)",
     "Result-Sugar-All": "저당식단(냉장) + 저당플랜(냉동)",
-    "Result-Cal-All": "칼로리식단(냉장) + 350뷰티핏(냉동)",
+    "Result-Cal-All": "칼로리식단(냉장) + 350뷰티핏(냉동)+헬시그레인+헬시빈스",
     "Result-Pro-All": "단백질식단(냉장) + 프로틴Up(냉동)",
-    "Result-Slow-All": "저속식단(냉장) + 저속도시락(냉동)",
+    "Result-Slow-All": "저속식단(냉장) + 저속도시락(냉동)+헬시그레인+헬시빈스",
     "Result-Bal-All": "마이그리팅(냉장) + 맛집한끼(냉동)",
     
 }
