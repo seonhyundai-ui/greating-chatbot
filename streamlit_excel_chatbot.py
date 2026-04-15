@@ -175,7 +175,7 @@ REQUIRED_COLUMNS = [
 ]
 
 # GitHub 저장소에 함께 올려둘 기본 엑셀 파일명
-DEFAULT_EXCEL_FILE = "맞춤 식단 추천 알고리즘 마스터5.xlsx"
+DEFAULT_EXCEL_FILE = "맞춤 식단 추천 알고리즘 마스터6.xlsx"
 
 
 @dataclass
